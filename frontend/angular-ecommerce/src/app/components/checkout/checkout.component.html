@@ -78,8 +78,8 @@
                         <div class="col-md-9">
                             <div class="input-space">
                                 <select formControlName="country">
-                                    <option>China</option>
-                                    <option>America</option>
+                                    <option>CN</option>
+                                    <option>US</option>
                                 </select>
 
                                 <div *ngIf="shippingCountry.invalid && (shippingCountry.dirty ||shippingCountry.touched)"
@@ -193,8 +193,8 @@
                         <div class="col-md-9">
                             <div class="input-space">
                                 <select formControlName="country">
-                                    <option>China</option>
-                                    <option>America</option>
+                                    <option>CN</option>
+                                    <option>US</option>
                                 </select>
 
                                 <div *ngIf="billingCountry.invalid && (billingCountry.dirty ||billingCountry.touched)"
@@ -289,139 +289,21 @@
                     </div>
                 </div>
 
-                <!--credit card form control -->
+                <!--credit card form control ---stripe hold -->
                 <div formGroupName="creditCard" class="form-area">
-                    <h3>Credit Card</h3>
+                    <h3>Credit or Debit card</h3>
+                    <div id="card-element">
 
-                    <div class="row">
-                        <div class="col-md-2"> <label>Card Type</label></div>
-                        <div class="col-md-9">
-                            <div class="input-space">
-                                <select formControlName="cardType">
-                                    <option>Visa</option>
-                                    <option>Mastercard</option>
-                                </select>
-                                <div *ngIf="cardType.invalid && (cardType.dirty ||cardType.touched)"
-                                    class="alert alert-danger mt-l">
-                                    <div *ngIf="cardType.errors?.['required']">
-                                        Card Type is required
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-2"> <label>Name on Card</label></div>
-                        <div class="col-md-9">
-                            <div class="input-space">
-                                <input formControlName="nameOnCard" type="text">
-                                <div *ngIf="nameOnCard.invalid && (nameOnCard.dirty ||nameOnCard.touched)"
-                                    class="alert alert-danger mt-l">
-                                    <div
-                                        *ngIf="nameOnCard.errors?.['required'] || nameOnCard.errors?.['notOnlyWhitespace']">
-                                        Name on the card is required
-                                    </div>
-                                    <div *ngIf="nameOnCard.errors?.['minlength']">
-                                        Name must be at least 2 characters long
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <div id="card-errors" class="displayError.textContent!=='':'alert alert-danger mt-1'">
 
-                    <div class="row">
-                        <div class="col-md-2"> <label>Card Number</label></div>
-                        <div class="col-md-9">
-                            <div class="input-space">
-                                <input formControlName="cardNumber" type="text">
-                                <div *ngIf="cardNumber.invalid && (cardNumber.dirty ||cardNumber.touched)"
-                                    class="alert alert-danger mt-l">
-                                    <div *ngIf="cardNumber.errors?.['required']">
-                                        Card Number is required
-                                    </div>
-                                    <div *ngIf="cardNumber.errors?.['pattern']">
-                                        Card number must be a 16 digits number
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
+                    
 
-                    <div class="row">
-                        <div class="col-md-2"> <label>Security Code</label></div>
-                        <div class="col-md-9">
-                            <div class="input-space">
-                                <input formControlName="securityCode" type="text">
-                                <div *ngIf="securityCode.invalid && (securityCode.dirty ||securityCode.touched)"
-                                    class="alert alert-danger mt-l">
-                                    <div *ngIf="securityCode.errors?.['required']">
-                                        Security Code is required
-                                    </div>
-                                    <div *ngIf="securityCode.errors?.['pattern']">
-                                        securityCode must be a 3 digits number
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-2"> <label>Expiration Month</label></div>
-                        <div class="col-md-9">
-                            <div class="input-space">
-                                <select formControlName="expirationMonth">
-                                    <option>01</option>
-                                    <option>02</option>
-                                    <option>03</option>
-                                    <option>04</option>
-                                    <option>05</option>
-                                    <option>06</option>
-                                    <option>07</option>
-                                    <option>08</option>
-                                    <option>09</option>
-                                    <option>10</option>
-                                    <option>11</option>
-                                    <option>12</option>
-                                </select>
-                                <div *ngIf="expirationMonth.invalid && (expirationMonth.dirty ||expirationMonth.touched)"
-                                    class="alert alert-danger mt-l">
-                                    <div *ngIf="expirationMonth.errors?.['required']">
-                                        Expiration Month is required
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-2"> <label>Expiration Year</label></div>
-                        <div class="col-md-9">
-                            <div class="input-space">
-                                <select formControlName="expirationYear">
-                                    <option>2022</option>
-                                    <option>2023</option>
-                                    <option>2024</option>
-                                    <option>2025</option>
-                                    <option>2026</option>
-                                    <option>2027</option>
-                                    <option>2028</option>
-                                    <option>2029</option>
-                                    <option>2030</option>
-                                </select>
-
-                                <div *ngIf="expirationYear.invalid && (expirationYear.dirty ||expirationYear.touched)"
-                                    class="alert alert-danger mt-l">
-                                    <div *ngIf="expirationYear.errors?.['required']">
-                                        Expiration Year is required
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
                 </div>
-
+                <!--review roder detail-->
 
                 <div class="form-area">
                     <h3>Review Your Order</h3>

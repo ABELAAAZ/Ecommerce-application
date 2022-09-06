@@ -5,10 +5,12 @@ import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms'
 import { Router } from '@angular/router';
 import { Order } from 'src/app/common/order';
 import { OrderItem } from 'src/app/common/order-item';
+import { PaymentInfo } from 'src/app/common/payment-info';
 import { Purchase } from 'src/app/common/purchase';
 import { CartService } from 'src/app/services/cart.service';
 import { CheckoutService } from 'src/app/services/checkout.service';
 import { FormValidators } from 'src/app/validators/form-validators';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-checkout',
@@ -20,7 +22,13 @@ export class CheckoutComponent implements OnInit {
   checkoutFormGroup!: FormGroup;
   totalPrice: number = 0;
   totalQuantity: number = 0;
-  storage:Storage=sessionStorage;
+  storage: Storage = sessionStorage;
+
+  // initialize stripe api
+  stripe = Stripe(environment.stripePublishableKey);
+  cardElement: any;
+  displayError: any = '';
+  paymentInfo: PaymentInfo = new PaymentInfo();
 
   constructor(private formBuilder: FormBuilder,
     private cartService: CartService,
@@ -29,8 +37,8 @@ export class CheckoutComponent implements OnInit {
 
   ngOnInit(): void {
     this.reviewCartDetails();
-    
-    const theEmail=JSON.parse(this.storage.getItem('userEmail'));
+    this.setupStripePaymentForm();
+    const theEmail = JSON.parse(this.storage.getItem('userEmail'));
 
     this.checkoutFormGroup = this.formBuilder.group({
       //customer info
@@ -78,16 +86,30 @@ export class CheckoutComponent implements OnInit {
 
       //card info
       creditCard: this.formBuilder.group({
-        cardType: new FormControl('', [Validators.required]),
-        nameOnCard: new FormControl('', [Validators.required, Validators.minLength(2),
-        FormValidators.notOnlyWhitespace]),
-        cardNumber: new FormControl('', [Validators.required, Validators.pattern('[0-9]{16}')]),
-        securityCode: new FormControl('', [Validators.required, Validators.pattern('[0-9]{3}')]),
-        expirationMonth: new FormControl('', [Validators.required]),
-        expirationYear: new FormControl('', [Validators.required])
+
       })
     });
   }
+  setupStripePaymentForm() {
+    //get a handle to stripe element
+    var elements = this.stripe.elements();
+    //create card
+    this.cardElement = elements.create('card', { hidePostalCode: true });
+    //add an instance of card UI component into the card element div
+    this.cardElement.mount('#card-element');
+    //add event
+    this.cardElement.on('change', (event) => {
+      this.displayError = document.getElementById('card-errors');
+      if (event.complete) {
+        this.displayError.textContent = "";
+      } else if (event.error) {
+        this.displayError.textContent = event.error.message;
+
+      }
+    });
+  }
+
+
 
 
   onSubmit() {
@@ -120,33 +142,73 @@ export class CheckoutComponent implements OnInit {
 
     // set up purchase
     let purchase = new Purchase();
-    
+
     // populate purchase - customer
     purchase.customer = this.checkoutFormGroup.controls['customer'].value;
-    
+
     // populate purchase - shipping address
     purchase.shippingAddress = this.checkoutFormGroup.controls['shippingAddress'].value;
     // populate purchase - billing address
     purchase.billingAddress = this.checkoutFormGroup.controls['billingAddress'].value;
-  
+
     // populate purchase - order and orderItems
     purchase.order = order;
     purchase.orderItems = orderItems;
 
-    // call REST API via the CheckoutService
-    this.checkoutService.placeOrder(purchase).subscribe({
-        next: response => {
-          alert(`Your order has been received.\nOrder tracking number: ${response.orderTrackingNumber}`);
 
-          // reset cart
-          this.resetCart();
+    this.paymentInfo.amount = this.totalPrice * 100;
+    this.paymentInfo.currency = "USD";
+    this.paymentInfo.receiptEmail=purchase.customer.email;
 
-        },
-        error: err => {
-          alert(`There was an error: ${err.message}`);
+    //if valid form then create a payment intent
+
+    if (!this.checkoutFormGroup.invalid && this.displayError.textContent === "") {
+      console.log("valid");
+      this.checkoutService.createPaymentIntent(this.paymentInfo).subscribe(
+        (paymentIntentResponse) => {
+          this.stripe.confirmCardPayment(paymentIntentResponse.client_secret,
+            {
+              payment_method: {
+                card: this.cardElement,
+                billing_details:{
+                  email:purchase.customer.email,
+                  name:`${purchase.customer.firstName}  ${purchase.customer.lastName}`,
+                  address:{
+                    line1:purchase.billingAddress.street,
+                    city:purchase.billingAddress.city,
+                    state:purchase.billingAddress.state,
+                    postal_code:purchase.billingAddress.zipCode,
+                    country:purchase.billingAddress.country
+                  }
+                }
+              }
+            }, { handleActions: false })
+          .then(function(result) {
+            if (result.error) {
+              // inform the customer there was an error
+              alert(`There was an error: ${result.error.message}`);
+            } else {
+              // call REST API via the CheckoutService
+              console.log("successful");
+              this.checkoutService.placeOrder(purchase).subscribe({
+                next: response => {
+                  alert(`Your order has been received.\nOrder tracking number: ${response.orderTrackingNumber}`);
+
+                  // reset cart
+                  this.resetCart();
+                },
+                error: err => {
+                  alert(`There was an error: ${err.message}`);
+                }
+              })
+            }            
+          }.bind(this));
         }
-      }
-    );
+      );
+    } else {
+      this.checkoutFormGroup.markAllAsTouched();
+      return;
+    }
 
   }
 
@@ -155,7 +217,7 @@ export class CheckoutComponent implements OnInit {
     this.cartService.cartItems = [];
     this.cartService.totalPrice.next(0);
     this.cartService.totalQuantity.next(0);
-    
+
     // reset the form
     this.checkoutFormGroup.reset();
 
